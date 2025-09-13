@@ -4,12 +4,11 @@
 ;; mondd meg az ASDF-nek, hogy hol keresse a contrib modulokat
 (pushnew #P"~/.stumpwm.d/contrib/" asdf:*central-registry* :test #'equal)
 (set-module-dir (pathname-as-directory (concat (getenv "HOME") "/.stumpwm.d/contrib")))
+(add-to-load-path "/usr/share/common-lisp/source/stumpwm-contrib")
 
-;;; load TTF
-;;(ql:quickload :clx-truetype)
-;;(load-module "ttf-fonts")
-;;(xft:cache-fonts)
-;;(set-font (make-instance 'xft:font :family "Source Code Pro" :subfamily "Bold" :size 7 :antialias t))
+
+
+(set-font "-xos4-terminus-bold-r-normal-*-16-*-*-*-*-*-*-*")
 
 ;; Prefix key átállítása (ha nem akarod a Ctrl+t-t)
 (set-prefix-key (kbd "F13"))  ;
@@ -23,7 +22,7 @@
 (define-key *top-map* (kbd "s-E") "exec subl")
 
 ;; Konfig újratöltése
-(define-key *top-map* (kbd "s-r") "reload")
+(define-key *top-map* (kbd "s-r") "exec alacritty -e vifm")
 
 ;; Restart (újraindítás)
 (define-key *top-map* (kbd "s-R") "restart-hard")
@@ -73,16 +72,19 @@
 (define-key *top-map* (kbd "s-h") "vsplit-and-focus")
 
 ;; Split bezárása
-(define-key *top-map* (kbd "s-x") "only")
+(define-key *top-map* (kbd "s-o") "remove-and-balance")
+(define-key *top-map* (kbd "s-b") "balance-frames")
 
 ;;; workspace-ek (groupok)
 (gnew "web")
 (gnew "chat")
 (gnew "dev")
+(gnew "vid")
+(gnew "game")
 (gselect "web")
 
 ;; A group-ok nevei
-(defparameter *my-groups* '("web" "chat" "dev"))
+(defparameter *my-groups* '("web" "chat" "dev" "vid" "game"))
 
 ;; Super + szám → váltás a group-ra
 (loop for i from 1 to (length *my-groups*)
@@ -91,27 +93,44 @@
         (kbd (format nil "s-~a" i))
         (format nil "gselect ~a" name)))
 
+(define-frame-preference "web"
+    (0 T T :class "Vivaldi-stable")
+    (0 T T :class "firefox"))
 
 
+(define-frame-preference "chat"
+    (0 T T :class "qutebrowser")
+    (0 T T :class "discord"))
+
+(define-frame-preference "dev"
+    (0 T T :class "subl3"))   
+
+(define-frame-preference "vid"
+    (0 T T :class "mpv"))
+
+(define-frame-preference "game"
+    (0 T T :class "steam"))    
+
+(define-key *top-map* (kbd "C-s-1") "gmove web")
+(define-key *top-map* (kbd "C-s-2") "gmove chat")
+(define-key *top-map* (kbd "C-s-3") "gmove dev")
+(define-key *top-map* (kbd "C-s-4") "gmove vid")
+(define-key *top-map* (kbd "C-s-5") "gmove game")
 
 (setf
  *mode-line-background-color* "#282a36";
  *mode-line-foreground-color* "#bbbbbb"
  *mode-line-border-color* "#282a36"
- *mode-line-border-width* 0
+ *mode-line-border-width* 2
+ *mode-line-pad-x* 6
+ *mode-line-pad-y* 6
  *mode-line-timeout* 1
  *group-format* " %t "
  *time-modeline-string* "%H:%M"
  *window-format* "<%n:%25t>"
- *screen-mode-line-format* (list "%g  %v ^> " '(:eval  (string-trim '(#\Newline) (run-shell-command "sensors | grep Tctl | awk '{print $2}' | sed 's/+//g'" t))) " | " '(:eval  (string-trim '(#\Newline) (run-shell-command "sensors | awk '/edge:/ {print $2}'" t))) " | " '(:eval (string-trim '(#\Newline) (run-shell-command "$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq) | awk '{printf("%.2f GHz", $1/1000000)}'" t))) " |  %d")
-)
+ *screen-mode-line-format* (list "%g  %v ^> " '(:eval (string-trim '(#\Newline) (run-shell-command "sensors | awk  '/Core 0:/ {print $3}' | sed 's/+//g'" t))) " | " '(:eval  (string-trim '(#\Newline) (run-shell-command "sensors | awk  '/edge:/ {print $2}'" t))) " | " '(:eval (string-trim '(#\Newline) (run-shell-command "date" t)))))
 
 (enable-mode-line (current-screen) (current-head) t)
-
-;;; téma / színek
-(set-fg-color "#ffffff")
-(set-bg-color "#282a36")
-(set-border-color "#282a36")
 
 
 
@@ -121,7 +140,7 @@
         "#BF6262"   ;red
         "#a1bf78"   ;green
         "#dbb774"   ;yellow
-        "#7D8FA3"   ;blue
+        "#6272a4"   ;blue
         "#ff99ff"   ;magenta
         "#53cdbd"   ;cyan
         "#ffffff")) ;white
@@ -132,11 +151,15 @@
 ;;; Basic Settings
 
 (setf *message-window-gravity* :center
+      *input-window-gravity* :center
+      *message-window-padding* 8
+      *message-window-y-padding* 6
       *window-border-style* :thin
       *message-window-padding* 3
       *maxsize-border-width* 2
       *normal-border-width* 2
       *transient-border-width* 2
+      *mouse-focus-policy* :click
       stumpwm::*float-window-border* 1
       stumpwm::*float-window-title-height* 1)
 
@@ -153,3 +176,5 @@
 ;;;  end session module
 (load-module "end-session")
 (define-key *root-map* (kbd "Escape") "end-session")
+
+;; Add the system tray module
